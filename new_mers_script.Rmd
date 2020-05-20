@@ -1,0 +1,74 @@
+---
+title: Data visualization^[Contributions to lectures and practicals by Andrew W. Park,
+  John M. Drake and Ana I. Bento]
+author: ''
+date: ''
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message=FALSE, warning=FALSE)
+```
+
+
+## Case study
+
+As a running example in this exercise, we will study a data set on the spread of Middle East Respiratory Syndrome Corona Virus (MERS-CoV) compiled and made available by Andrew Rambaut on his Github site (https://github.com/rambaut/MERS-Cases/blob/gh-pages/data/cases.csv). Github is a development platform used by developers to host a wide range of coding projects and is very popular with data scientists and others interested in open science. We will return to Github on the final day of the module. For now, we will just use it to access Rambaut's data. MERS-CoV is a positive-sense single-stranded Betacoronavirus. Its closest relatives are the SARS coronavirus, common-cold coronavirus, and other human betacoronaviruses. MERS-CoV first emerged in Saudi Arabia in 2012. It causes a severe respiratory illness. Transmission to humans may be direct (person-to-person), particularly in hospitals, or from contact with infected animals. Exposure to camels is associated with many cases, although bats, particularly the Egyptian Tomb bat (*Taphozous perforatus*), are suspected to be the maintenance reservoir. The case fatality rate is around 40%.
+
+## Getting the data into R
+
+To load the MERS data into an R session, do the following:
+
+1. Create a working directory called `mers`
+2. Download the file `cases.csv` and move it to `mers`
+3. Open a session of R Studio
+4. Set the working directory by typing `setwd('~/./mers)` where `.` is the file path to your working directory. (Alternatively, you can navigate by using the `Session` drop down menu and selecting `Set Working Directory`.)
+5. Create an R *dataframe* by typing `data <- read.csv('cases.csv')` as shown below.
+
+```{r load-data}
+mers <- read.csv('cases.csv')
+```
+## Formatting some dates
+
+We can inspect the data using the base R function `head`. We see that some variables, such as `onset` and `hospitalized` are dates, but formatted as a `factor`.
+
+```{r}
+head(mers)
+class(mers$onset)
+```
+These dates can be reformatted using the `lubridate` package. Here we create new variables using the `Date` class. But, first we correct a few errors.
+
+```{r}
+mers$hospitalized[890] <- c('2015-02-20')
+mers <- mers[-471,]
+library(lubridate)
+mers$onset2 <- ymd(mers$onset)
+mers$hospitalized2 <- ymd(mers$hospitalized)
+class(mers$onset2)
+```
+
+We may also find it useful to have a simple numerical value for the days elapsed since the start of the epidemic.  We use the following code to search for the earliest onset date.
+
+```{r}
+day0 <- min(na.omit(mers$onset2))
+```
+
+Now we can create a new, numeric value for the "epidemic day" for each case.
+
+```{r}
+mers$epi.day <- as.numeric(mers$onset2 - day0)
+```
+
+## Making a plot
+
+
+```{r ggplot2}
+library(ggplot2)
+ggplot(data=mers) + 
+  geom_bar(mapping=aes(x=epi.day, fill=country)) +
+  labs(x='Epidemic day', y='Case count', title='Global count of MERS cases by date of symptom onset',
+       caption="Data from: https://github.com/rambaut/MERS-Cases/blob/gh-pages/data/cases.csv")
+```
+
